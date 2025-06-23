@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STM32 Firmware Nahrávač</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #a00000, #800000); /* Deep red gradient for the entire background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #f8fafc; /* Light text for better contrast on dark red background */
+        }
+        .container {
+            background-color: #bb0000; /* Slightly lighter red for the card */
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); /* More pronounced shadow */
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #d00000; /* Subtle red border */
+        }
+        h1 {
+            color: #ffffff; /* White heading */
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #d00000; /* Red divider */
+        }
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .file-input-wrapper {
+            margin-bottom: 15px;
+        }
+        input[type="file"] {
+            display: none; /* Hides the default file input */
+        }
+        .custom-file-upload {
+            display: inline-block;
+            padding: 12px 25px;
+            cursor: pointer;
+            background-color: #22c55e; /* Vibrant green for the button */
+            color: white;
+            border: 2px solid #000000; /* Black border for the Select file button */
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3);
+        }
+        .custom-file-upload:hover {
+            background-color: #16a34a; /* Darker green on hover */
+            border-color: #333333; /* Possible border color change on hover */
+        }
+        /* Univerzálny štýl pre deaktivované tlačidlo na výber súboru */
+        .custom-file-upload.disabled {
+            background-color: #660000; /* Rovnaká tmavšia červená ako pre disabled button */
+            color: #d00000; /* Rovnaký svetlejší text ako pre disabled button */
+            cursor: not-allowed;
+            box-shadow: none;
+            border-color: #440000; /* Rovnaký tmavší okraj ako pre disabled button */
+            pointer-events: none; /* Zablokovanie interakcie */
+        }
+        #fileNameDisplay {
+            margin-top: 15px;
+            font-style: italic;
+            color: #f8fafc; /* Light gray for filename on darker red */
+            font-size: 0.9em;
+            word-wrap: break-word;
+        }
+        button { /* Spoločný štýl pre všetky tlačidlá */
+            padding: 12px 25px;
+            border: 2px solid #000000; /* Black border */
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.1s ease, border-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 250px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        /* Špecifické štýly pre tlačidlo Nahrať Firmware */
+        button#uploadButton {
+            background-color: #10B981; /* Vibrant green */
+            color: white;
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+        button#uploadButton:hover {
+            background-color: #059669; /* Darker green on hover */
+            transform: translateY(-2px);
+            border-color: #333333;
+        }
+        /* Univerzálny štýl pre všetky <button> elementy, keď sú deaktivované */
+        button:disabled {
+            background-color: #660000; /* Rovnaká tmavšia červená ako pre custom-file-upload.disabled */
+            color: #d00000; /* Rovnaký svetlejší text ako pre custom-file-upload.disabled */
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+            border-color: #440000; /* Rovnaký tmavší okraj ako pre custom-file-upload.disabled */
+            pointer-events: none; /* Zablokovanie interakcie */
+        }
+
+        /* Nové štýly pre tlačidlo Pripojiť/Odpojiť */
+        button#connectDisconnectButton {
+            background-color: #4a90e2; /* Blue for connect/disconnect */
+            color: white;
+            box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+            margin-bottom: 15px; /* Space below it */
+        }
+        button#connectDisconnectButton:hover {
+            background-color: #357bd8;
+            transform: translateY(-2px);
+            border-color: #333333;
+        }
+        /* Pravidlo :disabled sa už vzťahuje aj na toto tlačidlo */
+
+        #message {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            word-wrap: break-word;
+            text-align: left;
+            border: 1px solid;
+            color: #f8fafc; /* Light text for messages */
+        }
+        .message.success {
+            background-color: #10b981; /* Green for success */
+            border-color: #059669;
+        }
+        .message.error {
+            background-color: #f00000; /* Even more vibrant red for error */
+            border-color: #d00000;
+        }
+        .message.info {
+            background-color: #4a90e2; /* Blue for info (contrasting with red) */
+            border-color: #357bd8;
+        }
+        .message.warn {
+            background-color: #facc15; /* Yellow for warning */
+            color: #1e293b; /* Darker text on yellow */
+            border-color: #eab308;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #f8fafc; /* Light text for labels */
+            font-size: 0.95em;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #d00000; /* Darker red shade for progress bar background */
+            border-radius: 5px;
+            margin-top: 20px;
+            height: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            border: 2px solid #000000; /* Black border for progress bar */
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: transparent; /* Transparent by default */
+            border-radius: 5px;
+            text-align: right; /* Text inside the bar */
+            color: white;
+            line-height: 25px;
+            font-size: 0.85em;
+            transition: width 0.3s ease, background-color 0.3s ease; /* Smooth animation of width and color */
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: flex;
+            align-items: center;
+            padding-right: 5px; /* Space for percentages if inside */
+            box-sizing: border-box;
+        }
+        .progress-bar.filled {
+            background-color: #10B981; /* Vibrant green for the filled part when it starts filling */
+        }
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            color: white; /* Percentage text is always white for contrast */
+            font-weight: 600;
+            z-index: 1; /* Ensures text is above the bar */
+            font-size: 0.85em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* For better visibility on green */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>STM32 Firmware Nahrávač</h1>
+
+        <div class="section">
+            <button id="connectDisconnectButton">Pripojiť zariadenie</button>
+            <div class="file-input-wrapper">
+                <label for="firmwareFile" class="custom-file-upload" id="selectFileButtonLabel">
+                    Vybrať súbor Firmware
+                </label>
+                <input type="file" id="firmwareFile" accept=".bin">
+                <div id="fileNameDisplay">Bez súboru na aktualizáciu</div> <!-- Zmena tu -->
+            </div>
+
+            <button id="uploadButton" disabled>Nahrať Firmware</button>
+
+            <div class="progress-container" id="overallProgressContainer">
+                <span class="progress-text" id="progressStatusText">0%</span>
+                <div class="progress-bar" id="overallProgressBar"></div>
+            </div>
+        </div>
+
+        <div id="message" class="message info hidden"></div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const firmwareFileInput = document.getElementById('firmwareFile');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const uploadButton = document.getElementById('uploadButton');
+        const messageDisplay = document.getElementById('message');
+        const selectFileButtonLabel = document.getElementById('selectFileButtonLabel');
+        const connectDisconnectButton = document.getElementById('connectDisconnectButton');
+
+        const overallProgressContainer = document.getElementById('overallProgressContainer');
+        const overallProgressBar = document.getElementById('overallProgressBar');
+        const progressStatusText = document.getElementById('progressStatusText');
+
+        // Global state variables
+        let selectedFile = null;
+        let hidDevice = null;
+        let isConnected = false; // Tracks if the device is connected
+        let isUploading = false; // Tracks if an upload process is in progress
+
+        // --- Constants from C code ---
+        const SECTOR_SIZE = 1024;
+        const HID_TX_PAYLOAD_BYTE_COUNT = 64; // HID_TX_SIZE - 1 (Report ID)
+        const HID_RX_PAYLOAD_BYTE_COUNT = 8;  // HID_RX_SIZE - 1 (Report ID)
+        const VID = 0x1209; // Vendor ID for Serasidis STM32_HID_Bootloader
+        const PID = 0xBEBA; // Product ID for Serasidis STM32_HID_Bootloader
+        const FIRMWARE_VER = 0x0300; // This constant is kept for reference, as requested.
+        const FIRMWARE_DISPLAY_VERSION = "v1.0.5 HID Boot"; // The specific string to display
+        const HID_REPORT_ID = 0x00; // Common report ID for interrupt reports
+
+        // Commands (payloads only, Report ID will be added by sendReport)
+        const CMD_RESET_PAGES_PAYLOAD = new Uint8Array([0x42, 0x54, 0x4C, 0x44, 0x43, 0x4D, 0x44, 0x00]);
+        const CMD_REBOOT_MCU_PAYLOAD = new Uint8Array([0x42, 0x54, 0x4C, 0x44, 0x43, 0x4D, 0x44, 0x01]);
+
+        // Progress bar segmentation for overall progress
+        const ERASE_PROGRESS_END = 5;       // Erase finishes at 5% of overall progress
+        const WRITE_PROGRESS_START = ERASE_PROGRESS_END;
+        const WRITE_PROGRESS_END = 95; // Write finishes at 95% of overall progress
+        const TOTAL_PROCESS_END = 100; // Overall process finishes at 100% after closing
+
+        // --- Helper Functions ---
+
+        /**
+         * Displays a message to the user in the message area.
+         * @param {string} text - The message text.
+         * @param {'info'|'success'|'error'|'warn'} type - The message type for styling.
+         */
+        function showMessage(text, type) {
+            messageDisplay.classList.remove('hidden', 'success', 'error', 'info', 'warn');
+            messageDisplay.textContent = text;
+            messageDisplay.className = `message ${type}`; // Resets and sets only the current class
+            console.log(`[${type.toUpperCase()}] ${text}`);
+        }
+
+        /**
+         * Updates the progress bar and its text label with percentages.
+         * @param {number} percentage - The completion percentage (0-100).
+         */
+        function updateProgressBar(percentage) {
+            if (percentage > 0) {
+                overallProgressBar.classList.add('filled'); // Adds class for green color
+            } else {
+                overallProgressBar.classList.remove('filled'); // Removes class for transparency
+            }
+            overallProgressBar.style.width = `${percentage}%`;
+
+            // Immediately updates text to match the new target value
+            progressStatusText.textContent = `${Math.round(percentage)}%`;
+
+            // Adjusts text color based on the fill level of the bar for better readability
+            if (percentage > 50) { // If the bar is more than half filled, text can be white
+                progressStatusText.classList.add('white');
+            } else {
+                progressStatusText.classList.remove('white');
+            }
+        }
+
+        /**
+         * Resets the progress bar.
+         */
+        function resetProgressBar() {
+            overallProgressBar.classList.remove('filled'); // Ensures it's not green at the start
+            overallProgressBar.style.width = '0%';
+            progressStatusText.textContent = '0%';
+            progressStatusText.classList.remove('white');
+        }
+
+        /**
+         * Updates the state of all buttons based on global state variables.
+         */
+        function updateButtonStates() {
+            // "Vybrať súbor Firmware" (label a input)
+            if (isUploading || !isConnected) { // Disabled if uploading OR not connected
+                firmwareFileInput.disabled = true;
+                selectFileButtonLabel.classList.add('disabled');
+            } else {
+                firmwareFileInput.disabled = false;
+                selectFileButtonLabel.classList.remove('disabled');
+            }
+
+            // "Nahrať Firmware" button
+            // This button is controlled by the 'disabled' attribute on the <button> element itself.
+            // The `button:disabled` CSS rule ensures it has the correct disabled appearance.
+            uploadButton.disabled = isUploading || !isConnected || !selectedFile;
+
+            // "Pripojiť/Odpojiť zariadenie" button
+            connectDisconnectButton.textContent = isConnected ? 'Odpojiť zariadenie' : 'Pripojiť zariadenie';
+            connectDisconnectButton.disabled = isUploading; // Disabled only during upload
+        }
+
+        /**
+         * Simulates the usb_write function from C code using WebHID.
+         * Sends an HID report with a payload and retries on certain errors.
+         * @param {HIDDevice} device - The connected HID device.
+         * @param {number} reportId - The HID report ID.
+         * @param {Uint8Array} payload - The data payload to send (max HID_TX_PAYLOAD_BYTE_COUNT).
+         * @returns {Promise<boolean>} - True if successful, false otherwise.
+         */
+        async function usbWrite(device, reportId, payload) {
+            let retries = 20;
+            const dataToSend = new Uint8Array(HID_TX_PAYLOAD_BYTE_COUNT);
+            // Copies the payload to dataToSend, padding with zeros if payload is smaller
+            dataToSend.set(payload);
+
+            while (retries > 0) {
+                try {
+                    await device.sendReport(reportId, dataToSend);
+                    return true; // Success
+                } catch (error) {
+                    // Check for common transfer errors that may require retrying
+                    if (error.name === 'NetworkError' && error.message.includes('A transfer error has occurred')) {
+                        console.warn(`[USB Write] Retries left: ${retries}. Error: ${error.message}`);
+                        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+                        retries--;
+                    } else if (error instanceof DOMException && error.name === 'NotAllowedError') {
+                        // User cancelled permission or device was disconnected during operation
+                        showMessage(`USB Chyba zápisu: Prístup zamietnutý alebo zariadenie odpojené. ${error.message}`, 'error');
+                        console.error('USB Write NotAllowedError:', error);
+                        return false;
+                    } else {
+                        // Other unrecoverable errors
+                        showMessage(`USB Chyba zápisu: Nepredvídaná chyba: ${error.message}`, 'error');
+                        console.error('USB Write Unexpected Error:', error);
+                        throw error; // Re-throw to be caught by outer try-catch
+                    }
+                }
+            }
+            showMessage('USB Chyba zápisu: Zlyhalo po viacerých opakovaniach.', 'error');
+            return false; // Failed after all retries
+        }
+
+        /**
+         * Waits for a specific ACK report from the HID device.
+         * @param {HIDDevice} device - The connected HID device.
+         * @param {number} timeoutMs - Maximum waiting time for ACK in milliseconds.
+         * @returns {Promise<void>} Resolves if ACK is received, rejects on timeout or error.
+         */
+        function waitForAck(device, timeoutMs) {
+            return new Promise((resolve, reject) => {
+                let timeoutId;
+
+                const onInputReport = (event) => {
+                    // Logs all incoming reports for debugging
+                    console.log(`[InputReport] ID: 0x${event.reportId.toString(16)}, Data: [${new Uint8Array(event.data.buffer).map(b => b.toString(16).padStart(2, '0')).join(', ')}], Length: ${event.data.byteLength}`);
+
+                    // Checks if it's the expected ACK report
+                    if (event.reportId === HID_REPORT_ID && event.data.byteLength === HID_RX_PAYLOAD_BYTE_COUNT) {
+                        const rxData = new Uint8Array(event.data.buffer);
+                        // Confirmed by previous console logs, 0x02 is at rxData[7].
+                        if (rxData[7] === 0x02) {
+                            console.log("ACK received and matches 0x02.");
+                            clearTimeout(timeoutId);
+                            device.removeEventListener('inputreport', onInputReport);
+                            resolve();
+                        } else {
+                            console.warn(`ACK: Received data, but byte 7 is 0x${rxData[7].toString(16)}. Expected 0x02. Full data: [${Array.from(rxData).map(b => b.toString(16).padStart(2, '0')).join(', ')}]`);
+                        }
+                    }
+                };
+
+                // Adds event listener only while waiting for ACK
+                device.addEventListener('inputreport', onInputReport);
+
+                timeoutId = setTimeout(() => {
+                    device.removeEventListener('inputreport', onInputReport);
+                    reject(new Error('ACK Timeout: Failed to get acknowledgment from device in time. Check browser console for detailed logs.'));
+                }, timeoutMs);
+            });
+        }
+
+        /**
+         * Updates the connection message based on current state (connected, file selected).
+         */
+        function updateConnectionMessage() {
+            if (isConnected) {
+                if (selectedFile) {
+                    showMessage(`Zariadenie pripojené. Firmware pripravený na nahranie. Verzia Firmware: ${FIRMWARE_DISPLAY_VERSION}.`, 'success');
+                } else {
+                    showMessage(`Zariadenie pripojené. Verzia Firmware: ${FIRMWARE_DISPLAY_VERSION}.`, 'success');
+                }
+            } else {
+                showMessage('Prehliadač podporuje WebHID API. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');
+            }
+        }
+
+
+        /**
+         * Function to connect to the HID device.
+         */
+        async function connectDevice() {
+            if (!navigator.hid) {
+                // This check is now done on DOMContentLoaded, so this branch should ideally not be hit
+                // if the UI disables itself correctly. Keeping it as a fallback.
+                showMessage('Váš prehliadač nepodporuje WebHID API. Pripojenie USB nie je možné.', 'error');
+                updateButtonStates();
+                return;
+            }
+
+            try {
+                showMessage(`Vyhľadávam zariadenie [${VID.toString(16).toUpperCase()}:${PID.toString(16).toUpperCase()}]...`, 'info');
+                const devices = await navigator.hid.requestDevice({
+                    filters: [{ vendorId: VID, productId: PID }]
+                });
+
+                if (devices.length === 0) {
+                    showMessage(`Žiadne HID zariadenie s VID:0x${VID.toString(16).toUpperCase()} a PID:0x${PID.toString(16).toUpperCase()} nebolo vybrané alebo nájdené.`, 'error');
+                    return;
+                }
+
+                hidDevice = devices[0];
+                await hidDevice.open();
+                // Add disconnect listener
+                hidDevice.addEventListener('disconnect', onDeviceDisconnected);
+
+                isConnected = true;
+                resetProgressBar(); // Reset progress bar when device connects
+                updateConnectionMessage(); // Call the unified message updater
+            } catch (hidError) {
+                if (hidError instanceof DOMException && hidError.name === 'SecurityError') {
+                    showMessage(
+                        'Chyba zabezpečenia WebHID: Prehliadač odmietol prístup k USB HID zariadeniam kvôli politike povolení. ' +
+                        'Uistite sa, že aplikácia je spustená cez HTTPS a prehliadač má povolenia (v nastaveniach stránky). ' +
+                        'Lokálne súbory alebo HTTP spojenia nemajú prístup k WebHID.',
+                        'error'
+                    );
+                } else if (hidError instanceof DOMException && hidError.name === 'NotAllowedError') {
+                    showMessage('WebHID: Prístup k zariadeniu bol zamietnutý alebo zrušený používateľom.', 'error');
+                } else if (hidError instanceof DOMException && hidError.name === 'NotFoundError') {
+                    showMessage('WebHID: Zariadenie nebolo nájdené alebo vybrané.', 'error');
+                } else {
+                    showMessage(`Neočekávaná chyba WebHID pri pripojení: ${hidError.message}. Skontrolujte konzolu prehliadača pre detailné logy.`, 'error');
+                }
+                console.error('WebHID Error during connection:', hidError);
+            } finally {
+                updateButtonStates();
+            }
+        }
+
+        /**
+         * Function to disconnect the HID device.
+         */
+        async function disconnectDevice() {
+            if (hidDevice && hidDevice.opened) {
+                try {
+                    hidDevice.removeEventListener('disconnect', onDeviceDisconnected);
+                    await hidDevice.close();
+                    showMessage('Zariadenie bolo odpojené.', 'info');
+                } catch (error) {
+                    showMessage(`Chyba pri odpojení zariadenia: ${error.message}`, 'error');
+                    console.error('Error during disconnection:', error);
+                } finally {
+                    isConnected = false;
+                    hidDevice = null;
+                    updateButtonStates();
+                }
+            } else {
+                showMessage('Žiadne zariadenie nie je pripojené na odpojenie.', 'warn');
+            }
+        }
+
+        /**
+         * Event handler when the device is disconnected by the system.
+         * @param {Event} event - The disconnect event.
+         * This function should be removed and the connection status should be managed
+         * by the global 'disconnect' event listener on navigator.hid.
+         */
+        function onDeviceDisconnected(event) {
+            if (hidDevice && event.device === hidDevice) {
+                console.log("Device disconnected by system:", event.device);
+                showMessage('Zariadenie bolo odpojené systémom. Pripojte sa znova.', 'info');
+                isConnected = false;
+                hidDevice = null; // Clear reference
+                updateButtonStates();
+                resetProgressBar(); // Reset progress bar on system disconnect
+            }
+        }
+
+        // --- Event Handlers ---
+
+        // Handle file selection
+        firmwareFileInput.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                const fileSizeKB = (selectedFile.size / 1024).toFixed(2); // Calculate size in KB
+                fileNameDisplay.textContent = `Vybraný súbor: ${selectedFile.name} (${fileSizeKB} kB)`; // Display size
+                updateConnectionMessage(); // Call the unified message updater
+            } else {
+                selectedFile = null;
+                fileNameDisplay.textContent = 'Bez súboru na aktualizáciu'; // Zmena tu
+                showMessage('Bez súboru na aktualizáciu. Prosím, vyberte súbor Firmware.', 'warn'); // Message if no file selected
+            }
+            updateButtonStates(); // Update button states after file selection
+            resetProgressBar(); // Reset progress bar upon new file selection
+        });
+
+        // Handle "Nahrať Firmware" button click
+        uploadButton.addEventListener('click', async () => {
+            if (!selectedFile) {
+                showMessage('Prosím, najprv vyberte súbor Firmware.', 'error');
+                return;
+            }
+            if (!isConnected || !hidDevice) {
+                showMessage('Zariadenie nie je pripojené. Prosím, pripojte zariadenie, aby ste mohli pokračovať.', 'error');
+                updateButtonStates();
+                return;
+            }
+
+            // Basic file extension check to ensure it's a .bin file
+            const fileName = selectedFile.name;
+            const fileExtension = fileName.split('.').pop().toLowerCase();
+            if (fileExtension !== 'bin') {
+                showMessage('Prosím, vyberte súbor Firmware s príponou .bin.', 'error');
+                return;
+            }
+
+            showMessage('Firmware sa nahráva...', 'info'); // Initial message
+            isUploading = true; // Set flag that upload is in progress
+            updateButtonStates(); // Update button states based on isUploading
+            resetProgressBar(); // Ensure the bar is reset to 0% at the start of the upload
+
+            try {
+                // Read file content as ArrayBuffer
+                const fileContentBuffer = await new Promise((resolve, reject) => {
+                    const fileReader = new FileReader();
+                    fileReader.onload = (e) => resolve(e.target.result);
+                    fileReader.onerror = (e) => reject(new Error('Chyba pri čítaní súboru.'));
+                    fileReader.readAsArrayBuffer(selectedFile);
+                });
+
+                showMessage('Firmware sa nahráva...', 'info'); // Zmenená správa
+
+                // --- Phase 1: Erase (in background, updates progress bar to ERASE_PROGRESS_END) ---
+                // Send RESET PAGES command
+                if (!(await usbWrite(hidDevice, HID_REPORT_ID, CMD_RESET_PAGES_PAYLOAD))) {
+                    showMessage('Chyba pri odosielaní príkazu na vymazanie (<reset pages>).', 'error');
+                    throw new Error('Chyba odosielania príkazu na vymazanie.'); // Throw to catch block
+                }
+                await new Promise(resolve => setTimeout(resolve, 500)); // Short delay for the device
+                updateProgressBar(ERASE_PROGRESS_END); // Move progress bar to 5%
+
+
+                // --- Phase 2: Write (actual progress from ERASE_PROGRESS_END to WRITE_PROGRESS_END) ---
+
+                let totalBytesFlashed = 0;
+                const totalFileBytes = fileContentBuffer.byteLength;
+                const ACK_TIMEOUT_MS = 1024; // Timeout for ACK to 10 seconds
+
+                // Read file in 1024-byte pages (SECTOR_SIZE)
+                for (let pageOffset = 0; pageOffset < totalFileBytes; pageOffset += SECTOR_SIZE) {
+                    const pageData = new Uint8Array(fileContentBuffer.slice(pageOffset, pageOffset + SECTOR_SIZE));
+
+                    // Send page in 64-byte chunks
+                    for (let i = 0; i < pageData.length; i += HID_TX_PAYLOAD_BYTE_COUNT) {
+                        const chunk = pageData.subarray(i, i + HID_TX_PAYLOAD_BYTE_COUNT);
+                        if (!(await usbWrite(hidDevice, HID_REPORT_ID, chunk))) {
+                            showMessage('Chyba pri nahrávaní dát Firmware (chunk).', 'error');
+                            throw new Error('Chyba odosielania dát Firmware.'); // Throw to catch block
+                        }
+                        totalBytesFlashed += chunk.length;
+                        // Recalculate write progress to overall progress from ERASE_PROGRESS_END to WRITE_PROGRESS_END
+                        const writePhaseProgressFactor = (totalBytesFlashed / totalFileBytes); // 0.0 - 1.0
+                        const overallProgress = WRITE_PROGRESS_START + (writePhaseProgressFactor * (WRITE_PROGRESS_END - WRITE_PROGRESS_START));
+                        updateProgressBar(overallProgress);
+                    }
+
+                    // Only wait for acknowledgment if it's not the last page
+                    const isLastPage = (pageOffset + SECTOR_SIZE >= totalFileBytes);
+                    if (!isLastPage) {
+                        try {
+                            await waitForAck(hidDevice, ACK_TIMEOUT_MS);
+                        } catch (ackError) {
+                            showMessage(`Nahrávanie Firmware: ${ackError.message}. Proces zastavený. Skontrolujte konzolu prehliadača pre detailné logy.`, 'error');
+                            throw ackError; // Re-throw to be caught by main catch block
+                        }
+                    } else {
+                        console.log("Skipping ACK for the last page as requested.");
+                    }
+                }
+
+                // --- Final Steps: Reboot and close device ---
+                // Progress bar is currently at WRITE_PROGRESS_END (95%)
+
+                if (!(await usbWrite(hidDevice, HID_REPORT_ID, CMD_REBOOT_MCU_PAYLOAD))) {
+                    showMessage('Chyba pri odosielaní príkazu <reboot mcu>. Zariadenie nemusí reštartovať správne.', 'error');
+                    throw new Error('Chyba odosielania príkazu na reštart.'); // Throw to catch block
+                } else {
+                    showMessage('Príkaz <reboot mcu> odoslaný. Zariadenie by sa malo reštartovať.', 'success');
+                }
+
+                // Disconnect device explicitly after successful upload
+                // This ensures the "Connect Device" button state is reset
+                await disconnectDevice();
+
+                showMessage('Firmware bol úspešne nahratý ! Zariadenie bolo odpojené.', 'success'); // Updated final message
+                updateProgressBar(TOTAL_PROCESS_END); // Reach 100% now
+
+            } catch (error) {
+                // If any error occurs during the upload process
+                showMessage(`Nahrávanie zlyhalo: ${error.message}. Zariadenie bolo odpojené a priebeh resetovaný.`, 'error');
+                console.error('General upload error:', error);
+                await disconnectDevice(); // Disconnect device on upload failure
+                resetProgressBar(); // Reset progress bar on upload failure
+            } finally {
+                isUploading = false; // Reset upload flag
+                updateButtonStates(); // Update button states regardless of success/failure
+            }
+        });
+
+
+        // Handle "Pripojiť/Odpojiť zariadenie" button click
+        connectDisconnectButton.addEventListener('click', () => {
+            if (isConnected) {
+                disconnectDevice();
+            } else {
+                connectDevice();
+            }
+        });
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!navigator.hid) {
+                showMessage('Váš prehliadač nepodporuje WebHID API. Táto aplikácia nebude fungovať správne.', 'error');
+                // Disable all interactive elements if WebHID is not supported
+                selectFileButtonLabel.classList.add('disabled');
+                firmwareFileInput.disabled = true;
+                uploadButton.disabled = true;
+                connectDisconnectButton.disabled = true;
+                connectDisconnectButton.textContent = 'WebHID Nepodporované';
+            } else {
+                // Check for existing connected devices and restore connection if possible
+                // (Optional: for persistent connections across page loads if device permissions allow)
+                // For this example, we always start in a disconnected state.
+                showMessage('Prehliadač podporuje WebHID API. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');
+                updateButtonStates(); // Set initial button states based on isConnected (which is false initially)
+                resetProgressBar(); // Initialize progress bar
+            }
+        });
+
+        // Optional: Listen for global HID connect/disconnect events for better robustness
+        if (navigator.hid) {
+            navigator.hid.addEventListener('connect', (event) => {
+                // Re-evaluate connection status if a device is connected externally
+                console.log("HID device connected externally:", event.device);
+                // If the connected device matches our VID/PID, we might automatically connect or prompt user
+                if (event.device.vendorId === VID && event.device.productId === PID) {
+                    showMessage('Zistené kompatibilné zariadenie HID. Kliknite na "Pripojiť zariadenie".', 'info');
+                }
+            });
+            // The onDeviceDisconnected listener is already added to hidDevice when it's opened.
+            // This global listener might be redundant if the per-device listener is sufficient.
+        }
+    </script>
+</body>
+</html>

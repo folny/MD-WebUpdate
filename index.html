@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metal Detector Update</title> <!-- Changed title here -->
+    <title>Metal Detector Update</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -186,7 +186,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Metal Detector Update</h1> <!-- Changed heading here -->
+        <h1>Metal Detector Update</h1>
 
         <div class="section">
             <button id="connectDisconnectButton">Pripojiť zariadenie</button>
@@ -400,7 +400,7 @@
             if (isConnected) {
                 showMessage(`Zariadenie pripojené. Verzia Firmware: ${FIRMWARE_DISPLAY_VERSION}.`, 'success');
             } else {
-                showMessage('Prehliadač podporuje WebHID API. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');
+                showMessage('Váš prehliadač podporuje potrebné rozhranie. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');
             }
         }
 
@@ -410,7 +410,7 @@
          */
         async function connectDevice() {
             if (!navigator.hid) {
-                showMessage('Váš prehliadač nepodporuje WebHID API. Pripojenie USB nie je možné.', 'error');
+                showMessage('Váš prehliadač nepodporuje potrebné rozhranie. Použite prehliadač Google Chrome alebo Microsoft Edge.', 'error'); // Modified message
                 updateButtonStates();
                 return;
             }
@@ -712,14 +712,15 @@
         // Initial setup on page load
         document.addEventListener('DOMContentLoaded', () => {
             if (!navigator.hid) {
-                showMessage('Váš prehliadač nepodporuje WebHID API. Táto aplikácia nebude fungovať správne.', 'error');
+                // Updated message as per user request
+                showMessage('Váš prehliadač nepodporuje potrebné rozhranie. Použite prehliadač Google Chrome alebo Microsoft Edge.', 'error');
                 // Disable all interactive elements if WebHID is not supported
                 uploadButton.disabled = true;
                 connectDisconnectButton.disabled = true;
-                connectDisconnectButton.textContent = 'WebHID Nepodporované';
+                connectDisconnectButton.textContent = 'Prehliadač nepodporovaný !'; // Modified text here
                 webFirmwareSelect.disabled = true;
             } else {
-                showMessage('Prehliadač podporuje WebHID API. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');
+                showMessage('Váš prehliadač podporuje potrebné rozhranie. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');
                 updateButtonStates(); // Set initial button states based on isConnected (which is false initially)
                 resetProgressBar(); // Initialize progress bar
                 fetchFirmwareFilesFromWeb(); // Automatically load files on page load

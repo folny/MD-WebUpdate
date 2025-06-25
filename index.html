@@ -45,45 +45,10 @@
             margin-bottom: 0;
             padding-bottom: 0;
         }
-        .file-input-wrapper {
+        .web-file-selection-wrapper {
             margin-bottom: 15px;
         }
-        input[type="file"] {
-            display: none; /* Hides the default file input */
-        }
-        .custom-file-upload {
-            display: inline-block;
-            padding: 12px 25px;
-            cursor: pointer;
-            background-color: #22c55e; /* Vibrant green for the button */
-            color: white;
-            border: 2px solid #000000; /* Black border for the Select file button */
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-            box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3);
-        }
-        .custom-file-upload:hover {
-            background-color: #16a34a; /* Darker green on hover */
-            border-color: #333333; /* Possible border color change on hover */
-        }
-        /* Univerzálny štýl pre deaktivované tlačidlo na výber súboru */
-        .custom-file-upload.disabled {
-            background-color: #660000; /* Rovnaká tmavšia červená ako pre disabled button */
-            color: #d00000; /* Rovnaký svetlejší text ako pre disabled button */
-            cursor: not-allowed;
-            box-shadow: none;
-            border-color: #440000; /* Rovnaký tmavší okraj ako pre disabled button */
-            pointer-events: none; /* Zablokovanie interakcie */
-        }
-        #fileNameDisplay {
-            margin-top: 15px;
-            font-style: italic;
-            color: #f8fafc; /* Light gray for filename on darker red */
-            font-size: 0.9em;
-            word-wrap: break-word;
-        }
-        button { /* Spoločný štýl pre všetky tlačidlá */
+        button { /* Common style for all main buttons */
             padding: 12px 25px;
             border: 2px solid #000000; /* Black border */
             border-radius: 8px;
@@ -96,7 +61,7 @@
             margin-top: 10px;
             cursor: pointer;
         }
-        /* Špecifické štýly pre tlačidlo Nahrať Firmware */
+        /* Specific styles for the "Upload Firmware" button */
         button#uploadButton {
             background-color: #10B981; /* Vibrant green */
             color: white;
@@ -107,18 +72,18 @@
             transform: translateY(-2px);
             border-color: #333333;
         }
-        /* Univerzálny štýl pre všetky <button> elementy, keď sú deaktivované */
+        /* Universal style for all <button> elements when disabled */
         button:disabled {
-            background-color: #660000; /* Rovnaká tmavšia červená ako pre custom-file-upload.disabled */
-            color: #d00000; /* Rovnaký svetlejší text ako pre custom-file-upload.disabled */
+            background-color: #660000; /* Same darker red as for disabled button */
+            color: #d00000; /* Same lighter text as for disabled button */
             cursor: not-allowed;
             box-shadow: none;
             transform: none;
-            border-color: #440000; /* Rovnaký tmavší okraj ako pre custom-file-upload.disabled */
-            pointer-events: none; /* Zablokovanie interakcie */
+            border-color: #440000; /* Same darker border as for disabled button */
+            pointer-events: none; /* Block interaction */
         }
 
-        /* Nové štýly pre tlačidlo Pripojiť/Odpojiť */
+        /* New styles for the Connect/Disconnect button */
         button#connectDisconnectButton {
             background-color: #4a90e2; /* Blue for connect/disconnect */
             color: white;
@@ -130,7 +95,6 @@
             transform: translateY(-2px);
             border-color: #333333;
         }
-        /* Pravidlo :disabled sa už vzťahuje aj na toto tlačidlo */
 
         #message {
             margin-top: 25px;
@@ -206,10 +170,18 @@
             color: white; /* Percentage text is always white for contrast */
             font-weight: 600;
             z-index: 1; /* Ensures text is above the bar */
-            font-size: 0.85em;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* For better visibility on green */
         }
 
+        #webFirmwareSelect {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #d00000;
+            background-color: #660000;
+            color: #f8fafc;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -218,12 +190,11 @@
 
         <div class="section">
             <button id="connectDisconnectButton">Pripojiť zariadenie</button>
-            <div class="file-input-wrapper">
-                <label for="firmwareFile" class="custom-file-upload" id="selectFileButtonLabel">
-                    Vybrať súbor Firmware
-                </label>
-                <input type="file" id="firmwareFile" accept=".bin">
-                <div id="fileNameDisplay">Bez súboru na aktualizáciu</div> <!-- Zmena tu -->
+
+            <div class="web-file-selection-wrapper section">
+                <select id="webFirmwareSelect" class="mt-2" disabled>
+                    <option value="">Vyberte verziu Firmware</option>
+                </select>
             </div>
 
             <button id="uploadButton" disabled>Nahrať Firmware</button>
@@ -239,19 +210,17 @@
 
     <script>
         // DOM Elements
-        const firmwareFileInput = document.getElementById('firmwareFile');
-        const fileNameDisplay = document.getElementById('fileNameDisplay');
         const uploadButton = document.getElementById('uploadButton');
         const messageDisplay = document.getElementById('message');
-        const selectFileButtonLabel = document.getElementById('selectFileButtonLabel');
         const connectDisconnectButton = document.getElementById('connectDisconnectButton');
+        const webFirmwareSelect = document.getElementById('webFirmwareSelect');
 
         const overallProgressContainer = document.getElementById('overallProgressContainer');
         const overallProgressBar = document.getElementById('overallProgressBar');
         const progressStatusText = document.getElementById('progressStatusText');
 
         // Global state variables
-        let selectedFile = null;
+        let selectedFile = null; // Object {name, url} for web file
         let hidDevice = null;
         let isConnected = false; // Tracks if the device is connected
         let isUploading = false; // Tracks if an upload process is in progress
@@ -275,6 +244,10 @@
         const WRITE_PROGRESS_START = ERASE_PROGRESS_END;
         const WRITE_PROGRESS_END = 95; // Write finishes at 95% of overall progress
         const TOTAL_PROCESS_END = 100; // Overall process finishes at 100% after closing
+
+        // GitHub API constants
+        const GITHUB_REPO_API_URL = 'https://api.github.com/repos/folny/MD-WebUpdate/contents/Update';
+
 
         // --- Helper Functions ---
 
@@ -324,21 +297,15 @@
         }
 
         /**
-         * Updates the state of all buttons based on global state variables.
+         * Updates the state of all buttons and inputs based on global state variables.
          */
         function updateButtonStates() {
-            // "Vybrať súbor Firmware" (label a input)
-            if (isUploading || !isConnected) { // Disabled if uploading OR not connected
-                firmwareFileInput.disabled = true;
-                selectFileButtonLabel.classList.add('disabled');
-            } else {
-                firmwareFileInput.disabled = false;
-                selectFileButtonLabel.classList.remove('disabled');
-            }
+            // Web firmware select dropdown
+            // Always disabled during upload or if not connected.
+            // If connected, it should be enabled, unless it's still loading.
+            webFirmwareSelect.disabled = isUploading || !isConnected || webFirmwareSelect.innerHTML.includes('-- Načítavam súbory... --');
 
             // "Nahrať Firmware" button
-            // This button is controlled by the 'disabled' attribute on the <button> element itself.
-            // The `button:disabled` CSS rule ensures it has the correct disabled appearance.
             uploadButton.disabled = isUploading || !isConnected || !selectedFile;
 
             // "Pripojiť/Odpojiť zariadenie" button
@@ -431,11 +398,7 @@
          */
         function updateConnectionMessage() {
             if (isConnected) {
-                if (selectedFile) {
-                    showMessage(`Zariadenie pripojené. Firmware pripravený na nahranie. Verzia Firmware: ${FIRMWARE_DISPLAY_VERSION}.`, 'success');
-                } else {
-                    showMessage(`Zariadenie pripojené. Verzia Firmware: ${FIRMWARE_DISPLAY_VERSION}.`, 'success');
-                }
+                showMessage(`Zariadenie pripojené. Verzia Firmware: ${FIRMWARE_DISPLAY_VERSION}.`, 'success');
             } else {
                 showMessage('Prehliadač podporuje WebHID API. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');
             }
@@ -447,8 +410,6 @@
          */
         async function connectDevice() {
             if (!navigator.hid) {
-                // This check is now done on DOMContentLoaded, so this branch should ideally not be hit
-                // if the UI disables itself correctly. Keeping it as a fallback.
                 showMessage('Váš prehliadač nepodporuje WebHID API. Pripojenie USB nie je možné.', 'error');
                 updateButtonStates();
                 return;
@@ -473,6 +434,12 @@
                 isConnected = true;
                 resetProgressBar(); // Reset progress bar when device connects
                 updateConnectionMessage(); // Call the unified message updater
+
+                // If not already populated, fetch firmware files after connection
+                if (webFirmwareSelect.options.length <= 1 && webFirmwareSelect.innerHTML.includes('Načítavam súbory...')) {
+                    fetchFirmwareFilesFromWeb();
+                }
+
             } catch (hidError) {
                 if (hidError instanceof DOMException && hidError.name === 'SecurityError') {
                     showMessage(
@@ -519,8 +486,6 @@
         /**
          * Event handler when the device is disconnected by the system.
          * @param {Event} event - The disconnect event.
-         * This function should be removed and the connection status should be managed
-         * by the global 'disconnect' event listener on navigator.hid.
          */
         function onDeviceDisconnected(event) {
             if (hidDevice && event.device === hidDevice) {
@@ -533,29 +498,100 @@
             }
         }
 
+        /**
+         * Fetches a list of .bin firmware files from the specified GitHub repository directory.
+         * This function is now called automatically on page load or device connect.
+         */
+        async function fetchFirmwareFilesFromWeb() {
+            // Removed: showMessage('Načítavam súbory firmvéru z GitHubu...', 'info');
+            webFirmwareSelect.innerHTML = '<option value="">-- Načítavam súbory... --</option>'; // Show loading state
+            webFirmwareSelect.disabled = true; // Disable during loading
+
+            try {
+                const response = await fetch(GITHUB_REPO_API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP chyba! Stav: ${response.status}`);
+                }
+                const data = await response.json();
+                const binFiles = data.filter(item => item.type === 'file' && item.name.endsWith('.bin'));
+
+                webFirmwareSelect.innerHTML = '<option value="">Vyberte verziu Firmware</option>'; // Default option text
+                if (binFiles.length === 0) {
+                    showMessage('Na GitHub repozitári neboli nájdené žiadne .bin súbory.', 'warn');
+                    webFirmwareSelect.disabled = true;
+                } else {
+                    binFiles.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.download_url; // Use download_url to fetch raw content later
+                        // Remove .bin extension for display
+                        option.textContent = file.name.replace(/\.bin$/i, '');
+                        webFirmwareSelect.appendChild(option);
+                    });
+                    webFirmwareSelect.disabled = false;
+                }
+            }
+             catch (error) {
+                showMessage(`Chyba pri načítaní súborov z GitHubu: ${error.message}`, 'error');
+                console.error('GitHub fetch error:', error);
+                webFirmwareSelect.innerHTML = '<option value="">-- Chyba načítania --</option>';
+                webFirmwareSelect.disabled = true;
+            } finally {
+                updateButtonStates(); // Re-enable select if connected and loaded
+            }
+        }
+
+        /**
+         * Reads the content of the selected file (web URL) into an ArrayBuffer.
+         * @param {object} fileSource - The selected file, an object with name/url.
+         * @returns {Promise<ArrayBuffer>} - The ArrayBuffer of the file content.
+         */
+        async function readFileContent(fileSource) {
+            if (fileSource && fileSource.url) {
+                // Handle web file (object with url)
+                showMessage(`Sťahujem súbor '${fileSource.name}' z webu...`, 'info');
+                try {
+                    const response = await fetch(fileSource.url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP chyba pri sťahovaní: ${response.status}`);
+                    }
+                    const buffer = await response.arrayBuffer();
+                    showMessage(`Súbor '${fileSource.name}' stiahnutý.`, 'success');
+                    return buffer;
+                } catch (error) {
+                    throw new Error(`Chyba pri sťahovaní súboru z webu: ${error.message}`);
+                }
+            }
+            throw new Error('Nepodporovaný typ súboru na čítanie. Očakáva sa objekt s URL.');
+        }
+
+
         // --- Event Handlers ---
 
-        // Handle file selection
-        firmwareFileInput.addEventListener('change', (event) => {
-            const files = event.target.files;
-            if (files.length > 0) {
-                selectedFile = files[0];
-                const fileSizeKB = (selectedFile.size / 1024).toFixed(2); // Calculate size in KB
-                fileNameDisplay.textContent = `Vybraný súbor: ${selectedFile.name} (${fileSizeKB} kB)`; // Display size
-                updateConnectionMessage(); // Call the unified message updater
+        // Handle web file selection
+        webFirmwareSelect.addEventListener('change', (event) => {
+            const selectedUrl = event.target.value;
+            if (selectedUrl) {
+                selectedFile = {
+                    // Use the original file name with .bin for the internal selectedFile object
+                    // This is important because the actual file name (with .bin) is used for messages
+                    name: webFirmwareSelect.options[webFirmwareSelect.selectedIndex].textContent + '.bin',
+                    url: selectedUrl
+                };
+                // Get the displayed name (without .bin) for the message
+                const displayedFileName = webFirmwareSelect.options[webFirmwareSelect.selectedIndex].textContent;
+                showMessage(`Pripravený na nahrávanie: ${displayedFileName}`, 'info'); // Updated text here
             } else {
                 selectedFile = null;
-                fileNameDisplay.textContent = 'Bez súboru na aktualizáciu'; // Zmena tu
-                showMessage('Bez súboru na aktualizáciu. Prosím, vyberte súbor Firmware.', 'warn'); // Message if no file selected
+                showMessage('Bez súboru na aktualizáciu. Prosím, vyberte súbor Firmware.', 'warn');
             }
-            updateButtonStates(); // Update button states after file selection
-            resetProgressBar(); // Reset progress bar upon new file selection
+            updateButtonStates();
+            resetProgressBar();
         });
 
         // Handle "Nahrať Firmware" button click
         uploadButton.addEventListener('click', async () => {
             if (!selectedFile) {
-                showMessage('Prosím, najprv vyberte súbor Firmware.', 'error');
+                showMessage('Prosím, najprv vyberte súbor Firmware z webu.', 'error');
                 return;
             }
             if (!isConnected || !hidDevice) {
@@ -578,15 +614,10 @@
             resetProgressBar(); // Ensure the bar is reset to 0% at the start of the upload
 
             try {
-                // Read file content as ArrayBuffer
-                const fileContentBuffer = await new Promise((resolve, reject) => {
-                    const fileReader = new FileReader();
-                    fileReader.onload = (e) => resolve(e.target.result);
-                    fileReader.onerror = (e) => reject(new Error('Chyba pri čítaní súboru.'));
-                    fileReader.readAsArrayBuffer(selectedFile);
-                });
+                // Read file content as ArrayBuffer - now handles only web files (from GitHub)
+                const fileContentBuffer = await readFileContent(selectedFile);
 
-                showMessage('Firmware sa nahráva...', 'info'); // Zmenená správa
+                showMessage('Firmware sa nahráva...', 'info');
 
                 // --- Phase 1: Erase (in background, updates progress bar to ERASE_PROGRESS_END) ---
                 // Send RESET PAGES command
@@ -653,6 +684,11 @@
                 showMessage('Firmware bol úspešne nahratý ! Zariadenie bolo odpojené.', 'success'); // Updated final message
                 updateProgressBar(TOTAL_PROCESS_END); // Reach 100% now
 
+                // Reset file selection after successful upload
+                selectedFile = null;
+                webFirmwareSelect.value = ""; // Reset dropdown to default option (Vyberte verziu Firmware)
+                updateButtonStates(); // Update UI to reflect reset selection
+
             } catch (error) {
                 // If any error occurs during the upload process
                 showMessage(`Nahrávanie zlyhalo: ${error.message}. Zariadenie bolo odpojené a priebeh resetovaný.`, 'error');
@@ -680,18 +716,15 @@
             if (!navigator.hid) {
                 showMessage('Váš prehliadač nepodporuje WebHID API. Táto aplikácia nebude fungovať správne.', 'error');
                 // Disable all interactive elements if WebHID is not supported
-                selectFileButtonLabel.classList.add('disabled');
-                firmwareFileInput.disabled = true;
                 uploadButton.disabled = true;
                 connectDisconnectButton.disabled = true;
                 connectDisconnectButton.textContent = 'WebHID Nepodporované';
+                webFirmwareSelect.disabled = true;
             } else {
-                // Check for existing connected devices and restore connection if possible
-                // (Optional: for persistent connections across page loads if device permissions allow)
-                // For this example, we always start in a disconnected state.
                 showMessage('Prehliadač podporuje WebHID API. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');
                 updateButtonStates(); // Set initial button states based on isConnected (which is false initially)
                 resetProgressBar(); // Initialize progress bar
+                fetchFirmwareFilesFromWeb(); // Automatically load files on page load
             }
         });
 
@@ -703,10 +736,11 @@
                 // If the connected device matches our VID/PID, we might automatically connect or prompt user
                 if (event.device.vendorId === VID && event.device.productId === PID) {
                     showMessage('Zistené kompatibilné zariadenie HID. Kliknite na "Pripojiť zariadenie".', 'info');
+                    if (webFirmwareSelect.options.length <= 1 && webFirmwareSelect.innerHTML.includes('Načítavam súbory...')) {
+                        fetchFirmwareFilesFromWeb(); // Also fetch if not already populated on external connect
+                    }
                 }
             });
-            // The onDeviceDisconnected listener is already added to hidDevice when it's opened.
-            // This global listener might be redundant if the per-device listener is sufficient.
         }
     </script>
 </body>

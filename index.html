@@ -507,7 +507,8 @@
          * This function is now called automatically on page load or device connect.
          */
         async function fetchFirmwareFilesFromWeb() {
-            webFirmwareSelect.innerHTML = '<option value="">Načítavam súbory...</option>';
+            // Changed the text content of the loading option to an empty string.
+            webFirmwareSelect.innerHTML = '<option value=""></option>';
             webFirmwareSelect.disabled = true; // Disable during loading
 
             try {
@@ -534,7 +535,6 @@
                 }
             }
              catch (error) {
-                // Removed the explicit message for fetch errors, but kept console.error for debugging.
                 webFirmwareSelect.innerHTML = '<option value="">Žiadne aktualizácie neboli najdené</option>';
                 webFirmwareSelect.disabled = true;
                 console.error('GitHub fetch error:', error); // Keep this for development/debugging

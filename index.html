@@ -436,7 +436,8 @@
                 updateConnectionMessage(); // Call the unified message updater
 
                 // If not already populated, fetch firmware files after connection
-                if (webFirmwareSelect.options.length <= 1 && webFirmwareSelect.innerHTML.includes('Načítavam súbory...')) {
+                // Changed the includes check to a more robust approach.
+                if (webFirmwareSelect.options.length <= 1 || webFirmwareSelect.options[0].textContent === '') {
                     fetchFirmwareFilesFromWeb();
                 }
 
@@ -507,7 +508,7 @@
          * This function is now called automatically on page load or device connect.
          */
         async function fetchFirmwareFilesFromWeb() {
-            // Changed the text content of the loading option to an empty string.
+            // Set initial state without any visible text while loading.
             webFirmwareSelect.innerHTML = '<option value=""></option>';
             webFirmwareSelect.disabled = true; // Disable during loading
 
@@ -519,11 +520,11 @@
                 const data = await response.json();
                 const binFiles = data.filter(item => item.type === 'file' && item.name.endsWith('.bin'));
 
-                webFirmwareSelect.innerHTML = '<option value="">Vyberte verziu Firmware</option>'; // Default option text
                 if (binFiles.length === 0) {
-                    showMessage('Na GitHub repozitári neboli nájdené žiadne .bin súbory.', 'warn');
+                    webFirmwareSelect.innerHTML = '<option value="">Žiadne aktualizácie neboli najdené</option>';
                     webFirmwareSelect.disabled = true;
                 } else {
+                    webFirmwareSelect.innerHTML = '<option value="">Vyberte verziu Firmware</option>'; // Default option text only if files are found
                     binFiles.forEach(file => {
                         const option = document.createElement('option');
                         option.value = file.download_url; // Use download_url to fetch raw content later
@@ -737,7 +738,9 @@
                 // If the connected device matches our VID/PID, we might automatically connect or prompt user
                 if (event.device.vendorId === VID && event.device.productId === PID) {
                     showMessage('Zistené kompatibilné zariadenie HID. Kliknite na "Pripojiť zariadenie".', 'info');
-                    if (webFirmwareSelect.options.length <= 1 && webFirmwareSelect.innerHTML.includes('Načítavam súbory...')) {
+                    // Check if the dropdown is currently showing "Načítavam súbory..." or is empty
+                    // to decide whether to re-fetch the firmware files.
+                    if (webFirmwareSelect.options.length <= 1 || webFirmwareSelect.options[0].textContent === '') {
                         fetchFirmwareFilesFromWeb(); // Also fetch if not already populated on external connect
                     }
                 }

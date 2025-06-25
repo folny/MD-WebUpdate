@@ -534,10 +534,10 @@
                 }
             }
              catch (error) {
-                showMessage(`Chyba pri načítaní súborov z GitHubu: ${error.message}`, 'error');
-                console.error('GitHub fetch error:', error);
-                webFirmwareSelect.innerHTML = '<option value="">Chyba načítania</option>';
+                // Removed the explicit message for fetch errors, but kept console.error for debugging.
+                webFirmwareSelect.innerHTML = '<option value="">Žiadne aktualizácie neboli najdené</option>';
                 webFirmwareSelect.disabled = true;
+                console.error('GitHub fetch error:', error); // Keep this for development/debugging
             } finally {
                 updateButtonStates(); // Re-enable select if connected and loaded
             }
@@ -550,7 +550,6 @@
          */
         async function readFileContent(fileSource) {
             if (fileSource && fileSource.url) {
-                // Removed: showMessage(`Sťahujem súbor '${fileSource.name}' z webu...`, 'info');
                 try {
                     const response = await fetch(fileSource.url);
                     if (!response.ok) {

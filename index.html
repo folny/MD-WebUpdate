@@ -435,11 +435,8 @@
                 resetProgressBar(); // Reset progress bar when device connects
                 updateConnectionMessage(); // Call the unified message updater
 
-                // If not already populated, fetch firmware files after connection
-                // Changed the includes check to a more robust approach.
-                if (webFirmwareSelect.options.length <= 1 || webFirmwareSelect.options[0].textContent === '') {
-                    fetchFirmwareFilesFromWeb();
-                }
+                // Always fetch firmware files after successful connection
+                fetchFirmwareFilesFromWeb();
 
             } catch (hidError) {
                 if (hidError instanceof DOMException && hidError.name === 'SecurityError') {
@@ -508,7 +505,6 @@
          * This function is now called automatically on page load or device connect.
          */
         async function fetchFirmwareFilesFromWeb() {
-            // Set initial state without any visible text while loading.
             webFirmwareSelect.innerHTML = '<option value=""></option>';
             webFirmwareSelect.disabled = true; // Disable during loading
 
@@ -546,7 +542,7 @@
 
         /**
          * Reads the content of the selected file (web URL) into an ArrayBuffer.
-         * @param {object} fileSource - The selected file, an object with name/url.
+         * @param {object} fileSource - The selected file, an.object with name/url.
          * @returns {Promise<ArrayBuffer>} - The ArrayBuffer of the file content.
          */
         async function readFileContent(fileSource) {
@@ -738,9 +734,7 @@
                 // If the connected device matches our VID/PID, we might automatically connect or prompt user
                 if (event.device.vendorId === VID && event.device.productId === PID) {
                     showMessage('Zistené kompatibilné zariadenie HID. Kliknite na "Pripojiť zariadenie".', 'info');
-                    // Check if the dropdown is currently showing "Načítavam súbory..." or is empty
-                    // to decide whether to re-fetch the firmware files.
-                    if (webFirmwareSelect.options.length <= 1 || webFirmwareSelect.options[0].textContent === '') {
+                    if (webFirmwareSelect.options.length <= 1 && webFirmwareSelect.options[0].textContent === '') {
                         fetchFirmwareFilesFromWeb(); // Also fetch if not already populated on external connect
                     }
                 }

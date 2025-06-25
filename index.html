@@ -410,7 +410,7 @@
          */
         async function connectDevice() {
             if (!navigator.hid) {
-                showMessage('Váš prehliadač nepodporuje potrebné rozhranie. Použite prehliadač Google Chrome alebo Microsoft Edge.', 'error'); // Modified message
+                showMessage('Váš prehliadač nepodporuje potrebné rozhranie. Použite prehliadač Google Chrome alebo Microsoft Edge.', 'error');
                 updateButtonStates();
                 return;
             }
@@ -577,7 +577,7 @@
                 };
                 // Get the displayed name (without .bin) for the message
                 const displayedFileName = webFirmwareSelect.options[webFirmwareSelect.selectedIndex].textContent;
-                showMessage(`Pripravený na nahrávanie: ${displayedFileName}`, 'info');
+                showMessage(`Pripravený na nahrávanie verzie: ${displayedFileName}`, 'info'); // Changed text here
             } else {
                 selectedFile = null;
                 showMessage('Prosím vyberte verziu Firmware.', 'warn');
@@ -712,12 +712,11 @@
         // Initial setup on page load
         document.addEventListener('DOMContentLoaded', () => {
             if (!navigator.hid) {
-                // Updated message as per user request
                 showMessage('Váš prehliadač nepodporuje potrebné rozhranie. Použite prehliadač Google Chrome alebo Microsoft Edge.', 'error');
                 // Disable all interactive elements if WebHID is not supported
                 uploadButton.disabled = true;
                 connectDisconnectButton.disabled = true;
-                connectDisconnectButton.textContent = 'Prehliadač nepodporovaný !'; // Modified text here
+                connectDisconnectButton.textContent = 'Prehliadač nepodporovaný !';
                 webFirmwareSelect.disabled = true;
             } else {
                 showMessage('Váš prehliadač podporuje potrebné rozhranie. Pre plnú funkčnosť pripojte zariadenie cez USB.', 'info');

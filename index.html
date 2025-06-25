@@ -303,7 +303,6 @@
             // Web firmware select dropdown
             // Always disabled during upload or if not connected.
             // If connected, it should be enabled, unless it's still loading.
-            // Removed -- from the includes check
             webFirmwareSelect.disabled = isUploading || !isConnected || webFirmwareSelect.innerHTML.includes('Načítavam súbory...');
 
             // "Nahrať Firmware" button
@@ -437,7 +436,6 @@
                 updateConnectionMessage(); // Call the unified message updater
 
                 // If not already populated, fetch firmware files after connection
-                // Removed -- from the includes check
                 if (webFirmwareSelect.options.length <= 1 && webFirmwareSelect.innerHTML.includes('Načítavam súbory...')) {
                     fetchFirmwareFilesFromWeb();
                 }
@@ -505,7 +503,7 @@
          * This function is now called automatically on page load or device connect.
          */
         async function fetchFirmwareFilesFromWeb() {
-            webFirmwareSelect.innerHTML = '<option value="">Načítavam súbory...</option>'; // Removed -- from here
+            webFirmwareSelect.innerHTML = '<option value="">Načítavam súbory...</option>';
             webFirmwareSelect.disabled = true; // Disable during loading
 
             try {
@@ -534,7 +532,7 @@
              catch (error) {
                 showMessage(`Chyba pri načítaní súborov z GitHubu: ${error.message}`, 'error');
                 console.error('GitHub fetch error:', error);
-                webFirmwareSelect.innerHTML = '<option value="">Chyba načítania</option>'; // Removed -- from here
+                webFirmwareSelect.innerHTML = '<option value="">Chyba načítania</option>';
                 webFirmwareSelect.disabled = true;
             } finally {
                 updateButtonStates(); // Re-enable select if connected and loaded
@@ -583,7 +581,7 @@
                 showMessage(`Pripravený na nahrávanie: ${displayedFileName}`, 'info');
             } else {
                 selectedFile = null;
-                showMessage('Bez súboru na aktualizáciu. Prosím, vyberte súbor Firmware.', 'warn');
+                showMessage('Prosím vyberte verziu Firmware.', 'warn'); // Updated text here
             }
             updateButtonStates();
             resetProgressBar();

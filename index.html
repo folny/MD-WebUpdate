@@ -477,7 +477,7 @@
                     isConnected = false;
                     hidDevice = null;
                     selectedFile = null; // Reset selected file on disconnect
-                    webFirmwareSelect.value = ""; // Reset dropdown to default option
+                    webFirmwareSelect.value = ""; // Reset dropdown to default option (Vyberte verziu Firmware)
                     updateButtonStates();
                 }
             } else {
@@ -495,8 +495,8 @@
                 showMessage('Zariadenie bolo odpojené systémom. Pripojte sa znova.', 'info');
                 isConnected = false;
                 hidDevice = null; // Clear reference
-                selectedFile = null; // Reset selected file on disconnect
-                webFirmwareSelect.value = ""; // Reset dropdown to default option
+                selectedFile = null; // Reset selected file on system disconnect
+                webFirmwareSelect.value = ""; // Reset dropdown to default option (Vyberte verziu Firmware)
                 updateButtonStates();
                 resetProgressBar(); // Reset progress bar on system disconnect
             }
@@ -550,8 +550,7 @@
          */
         async function readFileContent(fileSource) {
             if (fileSource && fileSource.url) {
-                // Handle web file (object with url)
-                showMessage(`Sťahujem súbor '${fileSource.name}' z webu...`, 'info');
+                // Removed: showMessage(`Sťahujem súbor '${fileSource.name}' z webu...`, 'info');
                 try {
                     const response = await fetch(fileSource.url);
                     if (!response.ok) {

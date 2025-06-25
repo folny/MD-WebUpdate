@@ -577,7 +577,7 @@
                 };
                 // Get the displayed name (without .bin) for the message
                 const displayedFileName = webFirmwareSelect.options[webFirmwareSelect.selectedIndex].textContent;
-                showMessage(`Pripravený na nahrávanie verzie: ${displayedFileName}`, 'info'); // Changed text here
+                showMessage(`Pripravený na nahrávanie verzie: ${displayedFileName}`, 'info');
             } else {
                 selectedFile = null;
                 showMessage('Prosím vyberte verziu Firmware.', 'warn');
@@ -679,7 +679,7 @@
                 // This ensures the "Connect Device" button state is reset
                 await disconnectDevice();
 
-                showMessage('Firmware bol úspešne nahratý ! Zariadenie bolo odpojené.', 'success'); // Updated final message
+                showMessage('Firmware bol úspešne nahratý. Zariadenie bolo odpojené.', 'success'); // Modified text here
                 updateProgressBar(TOTAL_PROCESS_END); // Reach 100% now
 
                 // Reset file selection after successful upload

@@ -476,6 +476,8 @@
                 } finally {
                     isConnected = false;
                     hidDevice = null;
+                    selectedFile = null; // Reset selected file on disconnect
+                    webFirmwareSelect.value = ""; // Reset dropdown to default option
                     updateButtonStates();
                 }
             } else {
@@ -493,6 +495,8 @@
                 showMessage('Zariadenie bolo odpojené systémom. Pripojte sa znova.', 'info');
                 isConnected = false;
                 hidDevice = null; // Clear reference
+                selectedFile = null; // Reset selected file on disconnect
+                webFirmwareSelect.value = ""; // Reset dropdown to default option
                 updateButtonStates();
                 resetProgressBar(); // Reset progress bar on system disconnect
             }
@@ -581,7 +585,7 @@
                 showMessage(`Pripravený na nahrávanie: ${displayedFileName}`, 'info');
             } else {
                 selectedFile = null;
-                showMessage('Prosím vyberte verziu Firmware.', 'warn'); // Updated text here
+                showMessage('Prosím vyberte verziu Firmware.', 'warn');
             }
             updateButtonStates();
             resetProgressBar();

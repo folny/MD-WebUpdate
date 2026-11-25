@@ -416,13 +416,13 @@
             }
 
             try {
-                showMessage(`Vyhľadávam zariadenie [${VID.toString(16).toUpperCase()}:${PID.toString(16).toUpperCase()}]...`, 'info');
+                showMessage(`Vyhľadávam zariadenie...`, 'info');
                 const devices = await navigator.hid.requestDevice({
                     filters: [{ vendorId: VID, productId: PID }]
                 });
 
                 if (devices.length === 0) {
-                    showMessage(`Žiadne HID zariadenie s VID:0x${VID.toString(16).toUpperCase()} a PID:0x${PID.toString(16).toUpperCase()} nebolo vybrané alebo nájdené.`, 'error');
+                    showMessage(`Žiadne zariadenie nebolo vybrané alebo nájdené.`, 'error');
                     return;
                 }
 
